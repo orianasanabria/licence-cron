@@ -3,7 +3,7 @@ name: Check licencia Ñuñoa
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/20 10-23 * * *'   # UTC: cada 20 min, ~07:00–20:59 Santiago
+    - cron: '3-59/5 10-23 * * *'   # cada 5 min (:03, :08, :13…), 07:00–20:59 Santiago
 
 concurrency:
   group: check
