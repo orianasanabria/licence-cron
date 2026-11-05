@@ -89,7 +89,12 @@ try {
     if (slots.length) found.push(`${d.day}/${d.m}/${d.y}: ${slots.join(', ')}`);
   }
   if (found.length) await notify(`Horas disponibles:\n${found.join('\n')}`);
-  else console.log(`[${new Date().toISOString()}] Sin horas (días habilitados: ${days.length})`);
+  else {
+    const msg = `Sin horas (días habilitados: ${days.length})`;
+    console.log(`[${new Date().toISOString()}] ${msg}`);
+    // Corrida manual desde Actions: avisar igual, para probar ntfy de punta a punta
+    if (process.env.GITHUB_EVENT_NAME === 'workflow_dispatch') await notify(`[test manual] ${msg}`);
+  }
 } catch (e) {
   console.error('Fallo el chequeo:', e.message, '| URL:', page.url());
   await page.screenshot({ path: 'debug-error.png', fullPage: true }).catch(() => {});
