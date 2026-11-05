@@ -32,7 +32,7 @@ async function goToCalendar(page) {
   await pickSelect(page, 'txt_sucursalC', '3');      // Municipalidad de Ñuñoa
   await pickSelect(page, 'txt_centroAtencion', '3'); // Licencia de Conducir
   await pickSelect(page, 'txt_servicios', '1');      // Primera Licencia
-  await page.getByRole('link', { name: 'Siguiente', exact: true }).click();
+  await page.getByText('Siguiente', { exact: true }).locator('visible=true').first().click();
   await page.waitForURL(/seleccionarCalendario/);
   await page.waitForLoadState('networkidle');
 }
@@ -70,7 +70,7 @@ async function slotsForDay(page, d) {
       $dp.find('.ui-datepicker-next').click();
     }
   }, d);
-  await page.getByRole('link', { name: 'Siguiente', exact: true }).click();
+  await page.getByText('Siguiente', { exact: true }).locator('visible=true').first().click();
   await page.waitForURL(/seleccionarHorarios/);
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(1500);
