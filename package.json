@@ -3,5 +3,5 @@
   "private": true,
   "type": "module",
   "scripts": { "check": "node check-nunoa-licencia.mjs" },
-  "dependencies": { "playwright": "^1.48.0" }
+  "dependencies": { "playwright": "1.64.0" }
 }
