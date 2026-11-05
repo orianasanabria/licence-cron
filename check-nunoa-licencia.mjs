@@ -25,6 +25,24 @@ async function pickSelect(page, id, value) {
     [id, value], { timeout: 15000 },
   );
   await page.selectOption(`#${id}`, value); // dispara change -> carga el siguiente combo
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(500);
+}
+
+// Clic en "Siguiente" y espera a cambiar de vista; reintenta y loguea si no navega
+async function clickNext(page, urlRe) {
+  for (let i = 1; i <= 3; i++) {
+    await page.getByText('Siguiente', { exact: true }).locator('visible=true').first().click();
+    try {
+      await page.waitForURL(urlRe, { timeout: 10000 });
+      await page.waitForLoadState('networkidle');
+      return;
+    } catch {
+      const txt = (await page.locator('body').innerText()).replace(/\s+/g, ' ').slice(0, 300);
+      console.log(`Intento ${i}: no navegó a ${urlRe}. Texto visible: ${txt}`);
+    }
+  }
+  throw new Error(`No se pudo avanzar a ${urlRe}`);
 }
 
 async function goToCalendar(page) {
@@ -32,9 +50,7 @@ async function goToCalendar(page) {
   await pickSelect(page, 'txt_sucursalC', '3');      // Municipalidad de Ñuñoa
   await pickSelect(page, 'txt_centroAtencion', '3'); // Licencia de Conducir
   await pickSelect(page, 'txt_servicios', '1');      // Primera Licencia
-  await page.getByText('Siguiente', { exact: true }).locator('visible=true').first().click();
-  await page.waitForURL(/seleccionarCalendario/);
-  await page.waitForLoadState('networkidle');
+  await clickNext(page, /seleccionarCalendario/);
 }
 
 async function listEnabledDays(page) {
@@ -70,16 +86,15 @@ async function slotsForDay(page, d) {
       $dp.find('.ui-datepicker-next').click();
     }
   }, d);
-  await page.getByText('Siguiente', { exact: true }).locator('visible=true').first().click();
-  await page.waitForURL(/seleccionarHorarios/);
-  await page.waitForLoadState('networkidle');
+  await clickNext(page, /seleccionarHorarios/);
   await page.waitForTimeout(1500);
   const text = await page.locator('body').innerText();
   return [...new Set(text.match(/\b\d{1,2}:\d{2}\b/g) || [])];
 }
 
 const browser = await chromium.launch();
-const page = await browser.newPage();
+const page = await browser.newPage({ locale: 'es-CL', timezoneId: 'America/Santiago' });
+page.on('dialog', async d => { console.log(`Dialog (${d.type()}): ${d.message()}`); await d.accept(); });
 try {
   await goToCalendar(page);
   const days = await listEnabledDays(page);
