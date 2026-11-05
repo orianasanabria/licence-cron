@@ -34,7 +34,7 @@ async function pickSelect(page, id, value) {
 
 // Clic en "Siguiente" y espera a cambiar de vista; reintenta y loguea si no navega
 async function clickNext(page, urlRe) {
-  for (let i = 1; i <= 3; i++) {
+  for (let i = 1; i <= 2; i++) {
     await page.getByText('Siguiente', { exact: true }).locator('visible=true').first().click();
     try {
       await page.waitForURL(urlRe, { timeout: 10000 });
@@ -89,7 +89,14 @@ async function slotsForDay(page, d) {
       $dp.find('.ui-datepicker-next').click();
     }
   }, d);
-  await clickNext(page, /seleccionarHorarios/);
+  const fecha = await page.getByPlaceholder('Seleccione una Fecha').inputValue();
+  if (!fecha) { console.log(`Día ${d.day}/${d.m}: no se pudo seleccionar en el datepicker`); return []; }
+  try {
+    await clickNext(page, /seleccionarHorarios/);
+  } catch {
+    console.log(`Día ${fecha}: el sitio no deja avanzar (probablemente sin cupos) — se trata como sin horas`);
+    return [];
+  }
   await page.waitForTimeout(1500);
   const text = await page.locator('body').innerText();
   return [...new Set(text.match(/\b\d{1,2}:\d{2}\b/g) || [])];
