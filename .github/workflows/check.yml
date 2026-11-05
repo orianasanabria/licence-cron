@@ -1,0 +1,35 @@
+name: Check licencia Ñuñoa
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/20 10-23 * * *'   # UTC: cada 20 min, ~07:00–20:59 Santiago
+
+concurrency:
+  group: check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Reachability
+        run: curl -sS -o /dev/null -w "HTTP %{http_code} en %{time_total}s\n" https://nunoa.ingelan.cl/ || true
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Check
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: npm run check
+      - name: Screenshot on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug
+          path: debug-*.png
+          if-no-files-found: ignore
