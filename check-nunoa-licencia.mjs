@@ -12,11 +12,14 @@ const MAX_MONTHS = 3;
 async function notify(msg) {
   console.log(msg);
   if (!NTFY_TOPIC) return;
-  await fetch(`https://ntfy.sh/${NTFY_TOPIC}`, {
+  const res = await fetch(`https://ntfy.sh/${encodeURIComponent(NTFY_TOPIC.trim())}`, {
     method: 'POST',
-    headers: { Title: 'Licencia Ñuñoa', Priority: 'high', Click: URL },
+    headers: { Title: 'Licencia Nunoa', Priority: 'high', Click: URL, Tags: 'car' },
     body: msg,
   });
+  const body = await res.text();
+  console.log(`ntfy: HTTP ${res.status} topic_len=${NTFY_TOPIC.trim().length} ${body.slice(0, 200)}`);
+  if (!res.ok) throw new Error(`ntfy respondió ${res.status}`);
 }
 
 async function pickSelect(page, id, value) {
