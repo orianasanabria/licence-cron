@@ -2,6 +2,11 @@ name: Check licencia Ñuñoa
 
 on:
   workflow_dispatch:
+    inputs:
+      test:
+        description: 'Mandar aviso de test aunque no haya horas'
+        type: boolean
+        default: false
   schedule:
     - cron: '3-59/5 * * * *'   # cada 5 min, 24/7
 
@@ -25,6 +30,7 @@ jobs:
       - name: Check
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          TEST_NOTIFY: ${{ inputs.test }}
         run: npm run check
       - name: Screenshot on failure
         if: failure()
