@@ -117,8 +117,9 @@ try {
   else {
     const msg = `Sin horas (días habilitados: ${days.length})`;
     console.log(`[${new Date().toISOString()}] ${msg}`);
-    // Corrida manual desde Actions: avisar igual, para probar ntfy de punta a punta
-    if (process.env.GITHUB_EVENT_NAME === 'workflow_dispatch') await notify(`[test manual] ${msg}`);
+    // Test explícito (input `test` del workflow_dispatch): avisar igual, para probar ntfy de punta a punta.
+    // Los dispatch de cron-job.org no lo mandan, así que no generan push cuando no hay horas.
+    if (process.env.TEST_NOTIFY === 'true') await notify(`[test manual] ${msg}`);
   }
 } catch (e) {
   console.error('Fallo el chequeo:', e.message, '| URL:', page.url());
