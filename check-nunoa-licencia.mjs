@@ -4,13 +4,10 @@
 // Notifica vía ntfy.sh (app gratis iOS/Android, suscríbete al mismo topic).
 
 import { chromium } from 'playwright';
-import { existsSync, readFileSync, writeFileSync, appendFileSync } from 'node:fs';
 
 const URL = 'https://nunoa.ingelan.cl/';
 const NTFY_TOPIC = process.env.NTFY_TOPIC;
 const MAX_MONTHS = 3;
-const STATE = 'cupos.json'; // cupos vistos en la última corrida
-const LOG = 'cupos.csv';    // historial: cuándo aparece/desaparece cada cupo
 
 async function notify(msg) {
   console.log(msg);
@@ -111,35 +108,17 @@ page.on('dialog', async d => { console.log(`Dialog (${d.type()}): ${d.message()}
 try {
   await goToCalendar(page);
   const days = await listEnabledDays(page);
-  const current = []; // ["5/11/2026 09:00", ...]
+  const found = [];
   for (const d of days) {
     const slots = await slotsForDay(page, d);
-    for (const h of slots) current.push(`${d.day}/${d.m}/${d.y} ${h}`);
+    if (slots.length) found.push(`${d.day}/${d.m}/${d.y}: ${slots.join(', ')}`);
   }
-
-  // Estado previo -> detectar cupos nuevos / tomados
-  const prev = new Set(existsSync(STATE) ? JSON.parse(readFileSync(STATE, 'utf8')) : []);
-  const now = new Set(current);
-  const nuevos = current.filter(k => !prev.has(k));
-  const tomados = [...prev].filter(k => !now.has(k));
-  const ts = new Date().toLocaleString('sv-SE', { timeZone: 'America/Santiago' }); // 2026-11-05 17:10:00
-
-  if (nuevos.length || tomados.length) {
-    if (!existsSync(LOG)) appendFileSync(LOG, 'detectado_santiago,evento,fecha,hora\n');
-    const rows = [
-      ...nuevos.map(k => `${ts},aparece,${k.replace(' ', ',')}`),
-      ...tomados.map(k => `${ts},desaparece,${k.replace(' ', ',')}`),
-    ];
-    appendFileSync(LOG, rows.join('\n') + '\n');
-    writeFileSync(STATE, JSON.stringify([...now].sort(), null, 1) + '\n');
-  }
-  console.log(`[${ts}] días habilitados: ${days.length} | cupos: ${current.length} | nuevos: ${nuevos.length} | tomados: ${tomados.length}`);
-
-  if (nuevos.length) {
-    await notify(`Cupos nuevos:\n${nuevos.join('\n')}`);
-  } else if (process.env.GITHUB_EVENT_NAME === 'workflow_dispatch') {
-    // Corrida manual: avisar igual, para probar ntfy de punta a punta
-    await notify(`[test manual] ${current.length ? `Cupos ya conocidos:\n${current.join('\n')}` : `Sin horas (días habilitados: ${days.length})`}`);
+  if (found.length) await notify(`Horas disponibles:\n${found.join('\n')}`);
+  else {
+    const msg = `Sin horas (días habilitados: ${days.length})`;
+    console.log(`[${new Date().toISOString()}] ${msg}`);
+    // Corrida manual desde Actions: avisar igual, para probar ntfy de punta a punta
+    if (process.env.GITHUB_EVENT_NAME === 'workflow_dispatch') await notify(`[test manual] ${msg}`);
   }
 } catch (e) {
   console.error('Fallo el chequeo:', e.message, '| URL:', page.url());
